@@ -216,8 +216,8 @@ void gtk_sat_module_popup(GtkSatModule * module)
 
     gtk_widget_show_all(menu);
 
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
-                   0, gdk_event_get_time(NULL));
+    gtk_menu_popup_at_pointer(GTK_MENU(menu), 
+                  NULL);
 }
 
 /**
