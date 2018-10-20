@@ -373,8 +373,14 @@ static gboolean gpredict_app_config(GtkWidget * widget,
 #endif
 
     /* don't save off-screen positioning */
+    GdkDisplay * default_display;
+    GdkRectangle * workarea;
+
+    gdk_monitor_get_workarea(gdk_display_get_monitor(default_display), workarea);
+
+    
     if (x + event->width < 0 || y + event->height < 0 ||
-        x > gdk_screen_width() || y > gdk_screen_height())
+        x > workarea.width || y > workarea.height)
     {
 
         return FALSE;           /* carry on normally */
