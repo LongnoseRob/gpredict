@@ -353,7 +353,7 @@ static gboolean gpredict_app_config(GtkWidget * widget,
                                     GdkEventConfigure * event,
                                     gpointer data)
 {
-    gint            x, y;
+    gint            x, y, w, h;
 
     (void)data;
 
@@ -373,11 +373,29 @@ static gboolean gpredict_app_config(GtkWidget * widget,
 #endif
 
     /* don't save off-screen positioning */
-    if (x + event->width < 0 || y + event->height < 0 ||
-        x > gdk_screen_width() || y > gdk_screen_height())
-    {
+    /* gtk_menu_popup got deprecated in 3.22, first available in Ubuntu 18.04 */
+#if GTK_MINOR_VERSION < 22
+    w = gdk_screen_width();
+    h = gdk_screen_height();
+#else
+    GdkWindow      *window;
+    GdkDisplay     *display;
+    GdkMonitor     *monitor;
+    GdkRectangle    work_area;
 
-        return FALSE;           /* carry on normally */
+    /* https://gitlab.gnome.org/GNOME/gtk/-/issues/1028 */
+    window = gtk_widget_get_window(widget);
+    display = gtk_widget_get_display(widget);
+    monitor = gdk_display_get_monitor_at_window(display, window);
+    gdk_monitor_get_workarea(monitor, &work_area);
+
+    w = work_area.width;
+    h = work_area.height;
+#endif
+
+    if (x < 0 || y < 0 || x + event->width > w || y + event->height > h)
+    {
+        return FALSE;
     }
 
     /* store the position and size */
@@ -406,8 +424,8 @@ static gboolean gpredict_app_config(GtkWidget * widget,
 static gboolean tle_mon_task(gpointer data)
 {
     /*GtkWidget *selector; */
-    glong           last, now, thrld;
-    GTimeVal        tval;
+    glong           last, thrld;
+    gint64          now;
     GtkWidget      *dialog;
     GError         *err = NULL;
 
@@ -423,8 +441,7 @@ static gboolean tle_mon_task(gpointer data)
     last = sat_cfg_get_int(SAT_CFG_INT_TLE_LAST_UPDATE);
 
     /* get current time */
-    g_get_current_time(&tval);
-    now = tval.tv_sec;
+    now = g_get_real_time() / G_USEC_PER_SEC;
 
     /* threshold */
     switch (sat_cfg_get_int(SAT_CFG_INT_TLE_AUTO_UPD_FREQ))
